@@ -43,7 +43,7 @@ class ShTest extends FunSuite {
 
   test("feed to stdin") {
     expectResult(String.format("a%nb%n")) {
-      (Sh("cat")("a", "b")).toString()
+      (Sh("cat")(String.format("a%n"), String.format("b%n"))).toString()
     }
   }
 

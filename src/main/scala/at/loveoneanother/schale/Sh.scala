@@ -5,12 +5,15 @@ import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
+/**
+ * A process - could be a script interpreter, or a single process.
+ */
 class Proc(args: String*) extends Traversable[String] {
-  val pb = new ProcessBuilder(args: _*)
-  var proc: Process = null
+  private val pb = new ProcessBuilder(args: _*)
+  private var proc: Process = null
 
   /**
-   * Traverse lines in stdout only.
+   * Start process and traverse lines in standard output.
    */
   def stdout = new Traversable[String] {
     def foreach[U](fun: String => U) {
@@ -20,7 +23,7 @@ class Proc(args: String*) extends Traversable[String] {
   }
 
   /**
-   * Start process and traverse lines in stderr only.
+   * Start process and traverse lines in standard error.
    */
   def stderr = new Traversable[String] {
     def foreach[U](fun: String => U) {
@@ -30,7 +33,7 @@ class Proc(args: String*) extends Traversable[String] {
   }
 
   /**
-   * Start process and traverse lines in both stdout and stderr.
+   * Start process and traverse lines in both standard output and error.
    */
   def foreach[U](fun: String => U) {
     pb.redirectErrorStream(true)
@@ -80,7 +83,7 @@ class Proc(args: String*) extends Traversable[String] {
   }
 
   /**
-   * Kill the process and return its exit value.
+   * Destroy the process and return its exit value.
    * If process has not been started, an IllegalStateException is thrown.
    */
   def destroy(): Int = proc match {
@@ -89,7 +92,7 @@ class Proc(args: String*) extends Traversable[String] {
   }
 
   /**
-   * Collect traversable output from the running process via the Reader.
+   * Collect process output from the reader, and feel them to the function.
    */
   protected def collectOutput[U](fun: String => U, reader: BufferedReader) {
     try {
@@ -103,9 +106,12 @@ class Proc(args: String*) extends Traversable[String] {
     }
   }
 
+  /**
+   * A process with additional standard input.
+   */
   class ProcWithInput(args: Seq[String], input: Seq[String]) extends Proc(args: _*) {
     /**
-     * Start process and feed input into its stdin. EOL characters are automatically appended to each input line.
+     * Start process and feed input into its stdin.
      */
     override protected def startProc() {
       proc = pb.start()
@@ -113,7 +119,6 @@ class Proc(args: String*) extends Traversable[String] {
       try {
         for (s <- input) {
           stdin.write(s)
-          stdin.write(String format "%n")
         }
       } finally {
         stdin close
@@ -123,15 +128,11 @@ class Proc(args: String*) extends Traversable[String] {
 }
 
 /**
- * Run a command with command line arguments.
+ * Run a single program.
  */
 object Sh {
+  /**
+   * Run a program with command line rguments.
+   */
   def apply(args: String*): Proc = new Proc(args: _*)
-}
-
-/**
- * Run a command in background with command line arguments.
- */
-object AsyncSh {
-
 }
