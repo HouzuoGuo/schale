@@ -4,13 +4,19 @@ import java.io.IOException
 
 import org.scalatest.FunSuite
 
+import main.scala.at.loveoneanother.schale.Cwd
 import main.scala.at.loveoneanother.schale.Interpret
-import main.scala.at.loveoneanother.schale.ProcControl
 import main.scala.at.loveoneanother.schale.Sh
 
 class ShTest extends FunSuite {
   test("run process and use exit status") {
-    expectResult(0) { Sh("echo", "a")().waitFor() }
+    println("start")
+    new Cwd("/") {
+      expectResult(0) {
+        Sh("echo", "a")().waitFor()
+      }
+    }
+    println("done")
   }
 
   test("run process without IO") {
