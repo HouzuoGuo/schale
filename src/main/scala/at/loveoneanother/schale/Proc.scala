@@ -1,4 +1,4 @@
-package main.scala.at.loveoneanother.schale
+package at.loveoneanother.schale
 
 import java.io.BufferedReader
 import java.io.BufferedWriter

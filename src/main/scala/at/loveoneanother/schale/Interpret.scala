@@ -1,4 +1,4 @@
-package main.scala.at.loveoneanother.schale
+package at.loveoneanother.schale
 
 /**
  * Call operating system's script interpreter to run a script.

@@ -1,4 +1,4 @@
-package main.scala.at.loveoneanother
+package at.loveoneanother
 
 package object schale {
   implicit val defaultEnv = new Env(Map())

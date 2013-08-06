@@ -1,4 +1,4 @@
-package main.scala.at.loveoneanother.schale
+package at.loveoneanother.schale
 
 /**
  * Run a single program.

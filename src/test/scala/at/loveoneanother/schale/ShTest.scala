@@ -1,12 +1,8 @@
-package test.scala.at.loveoneanother.schale
+package at.loveoneanother.schale
 
 import java.io.IOException
 
 import org.scalatest.FunSuite
-
-import main.scala.at.loveoneanother.schale.Cwd
-import main.scala.at.loveoneanother.schale.Interpret
-import main.scala.at.loveoneanother.schale.Sh
 
 class ShTest extends FunSuite {
   test("run process and use exit status") {

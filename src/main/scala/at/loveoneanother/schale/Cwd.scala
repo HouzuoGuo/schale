@@ -1,4 +1,4 @@
-package main.scala.at.loveoneanother.schale
+package at.loveoneanother.schale
 
 /**
  * Current working directory for running a script interpreter or a single process.
