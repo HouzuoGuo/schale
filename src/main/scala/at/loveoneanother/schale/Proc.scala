@@ -4,10 +4,11 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.io.File
 /**
  * A process - could be a script interpreter, or a single process.
  */
-class Proc(args: String*) extends Traversable[String] {
+class Proc(env: Map[String, String], cwd: String, args: Seq[String]) extends Traversable[String] {
   private val pb = new ProcessBuilder(args: _*)
   private var proc: Process = null
 
@@ -52,9 +53,24 @@ class Proc(args: String*) extends Traversable[String] {
   }
 
   /**
-   * Feed input to the process.
+   * Feed data to standard input (and return new Proc object).
    */
-  def apply(input: String*) = new ProcWithInput(args, input)
+  def apply(input: String*) = new Proc(env, cwd, args) {
+    /**
+     * Start process and feed input into its stdin.
+     */
+    override protected def startProc() {
+      super.startProc()
+      val stdin = new BufferedWriter(new OutputStreamWriter(proc getOutputStream))
+      try {
+        for (s <- input) {
+          stdin.write(s)
+        }
+      } finally {
+        stdin close
+      }
+    }
+  }
 
   /**
    * Start process without any IO interaction.
@@ -85,8 +101,12 @@ class Proc(args: String*) extends Traversable[String] {
   /**
    * Start the process.
    */
-  protected def startProc()(implicit env: Env, cwd: Cwd) {
-    println(args, cwd, env)
+  protected def startProc() {
+    val environment = pb.environment()
+    env foreach { kv =>
+      environment.put(kv._1, kv._2)
+    }
+    pb.directory(new File(cwd))
     proc = pb.start()
   }
 
@@ -102,26 +122,6 @@ class Proc(args: String*) extends Traversable[String] {
       }
     } finally {
       reader close
-    }
-  }
-
-  /**
-   * A process with additional standard input.
-   */
-  class ProcWithInput(args: Seq[String], input: Seq[String]) extends Proc(args: _*) {
-    /**
-     * Start process and feed input into its stdin.
-     */
-    override protected def startProc()(implicit env: Env, cwd: Cwd) {
-      proc = pb.start()
-      val stdin = new BufferedWriter(new OutputStreamWriter(proc getOutputStream))
-      try {
-        for (s <- input) {
-          stdin.write(s)
-        }
-      } finally {
-        stdin close
-      }
     }
   }
 }

@@ -6,17 +6,11 @@ import org.scalatest.FunSuite
 
 class ShTest extends FunSuite {
   test("run process and use exit status") {
-    println("start")
-    new Cwd("/") {
-      expectResult(0) {
-        Sh("echo", "a")().waitFor()
-      }
-    }
-    println("done")
+    expectResult(0) { Sh("echo", "a")().waitFor() }
   }
 
   test("run process without IO") {
-    Sh("echo", "a")
+    Sh("echo", "a")()
     intercept[IOException] {
       Sh("does not exist")()
     }
@@ -87,5 +81,9 @@ class ShTest extends FunSuite {
     }
     proc()
     expectResult(143) { proc.destroy() }
+  }
+
+  test("run in specified cwd") {
+
   }
 }
