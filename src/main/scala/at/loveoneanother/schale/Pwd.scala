@@ -6,6 +6,8 @@ import java.io.File
  * A non-default current working directory for running script or command.
  */
 class Pwd(pwd: String, env: Map[String, String] = Map()) extends Env(env) {
+  implicit override val self = this
+
   override def toString = pwd
 
   override def applyTo(pb: ProcessBuilder) {

@@ -78,6 +78,11 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   }) waitFor
 
   /**
+   * Start this process in background (does not block main thread).
+   */
+  def bg() = this.startProc()
+
+  /**
    * Destroy the process and return its exit value.
    * If process has not been started, an IllegalStateException is thrown.
    */

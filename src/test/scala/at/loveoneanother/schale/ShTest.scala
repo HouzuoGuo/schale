@@ -1,9 +1,11 @@
-package at.loveoneanother.schale
+package test.at.loveoneanother.schale
 
 import java.io.IOException
-
 import org.scalatest.FunSuite
-import at.loveoneanother.schale._
+import at.loveoneanother.schale.Env
+import at.loveoneanother.schale.Pwd
+import at.loveoneanother.schale.Shell
+import at.loveoneanother.schale.Command
 
 class ShTest extends FunSuite {
   test("run process and use exit status") {
@@ -18,9 +20,7 @@ class ShTest extends FunSuite {
   }
 
   test("single command and collect stdout/stderr") {
-    expectResult(String.format("a%n")) {
-      Command("echo", "a").toString()
-    }
+    expectResult("a") { Command("echo", "a").toString() }
   }
 
   test("consume stdout") {
@@ -39,7 +39,7 @@ class ShTest extends FunSuite {
   }
 
   test("feed to stdin") {
-    expectResult(String.format("a%nb%n")) {
+    expectResult(String.format("a%nb")) {
       (Command("cat").input(String.format("a%n"), String.format("b%n"))).toString()
     }
   }
@@ -50,13 +50,13 @@ class ShTest extends FunSuite {
   }
 
   test("interpret and collect stdout/stderr") {
-    expectResult(String.format("a%n")) {
+    expectResult(String.format("a")) {
       Shell("echo a").toString()
     }
   }
 
   test("interpret using other interpreter") {
-    expectResult(String.format("a%n")) {
+    expectResult(String.format("a")) {
       Shell("echo a", "/bin/ksh").toString()
     }
   }
@@ -80,20 +80,41 @@ class ShTest extends FunSuite {
     intercept[IllegalStateException] {
       proc.destroy()
     }
-    proc.waitFor()
+    proc.bg()
     expectResult(143) { proc.destroy() }
   }
 
   test("run in specified cwd") {
     new Pwd("/") {
-      expectResult(String.format("/%n")) { Command("pwd").toString }
-      expectResult(String.format("/%n")) { Shell("pwd").toString }
+      expectResult("/") { Command("pwd").toString }
+      expectResult("/") { Shell("pwd").toString }
     }
   }
 
   test("run in specified environment") {
     new Env(Map("newvar" -> "a")) {
-      expectResult(String.format("a%n")) { Shell("echo $newvar").toString }
+      expectResult("a") { Shell("echo $newvar").toString }
+    }
+  }
+
+  test("combine both env and pwd") {
+    new Env(Map("newvar" -> "a")) {
+      expectResult("a") { Shell("echo $newvar").toString }
+      pwd("/") {
+        expectResult("a") { Shell("echo $newvar").toString }
+        expectResult("/") { Command("pwd").toString }
+      }
+      pwd("/tmp") {
+        expectResult("a") { Shell("echo $newvar").toString }
+        expectResult("/tmp") { Command("pwd").toString }
+      }
+      moreEnv(Map("newvar2" -> "b")) {
+        pwd("/") {
+          expectResult("a") { Shell("echo $newvar").toString }
+          expectResult("b") { Shell("echo $newvar2").toString }
+          expectResult("/") { Command("pwd").toString }
+        }
+      }
     }
   }
 }
