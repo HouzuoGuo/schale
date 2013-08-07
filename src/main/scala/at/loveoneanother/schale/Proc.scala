@@ -4,11 +4,12 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.io.File
+import scala.util.control.Breaks._
+
 /**
- * A process - could be a script interpreter, or a single process.
+ * An operating system process.
  */
-class Proc(env: Map[String, String], cwd: String, args: Seq[String]) extends Traversable[String] {
+class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   private val pb = new ProcessBuilder(args: _*)
   private var proc: Process = null
 
@@ -42,20 +43,14 @@ class Proc(env: Map[String, String], cwd: String, args: Seq[String]) extends Tra
   }
 
   /**
-   * Start process and return all output in stdout and stderr.
+   * Start process and return all output in standard output and error.
    */
-  override def toString = {
-    val output = new StringBuffer
-    for (line <- this) {
-      output append line append String.format("%n")
-    }
-    output toString
-  }
+  override def toString = String.format("%s%n", (this collect { case s: String => s }).mkString(String format "%n"))
 
   /**
    * Feed data to standard input (and return new Proc object).
    */
-  def apply(input: String*) = new Proc(env, cwd, args) {
+  def input(lines: String*) = new Proc(args: _*)(env, pwd) {
     /**
      * Start process and feed input into its stdin.
      */
@@ -63,7 +58,7 @@ class Proc(env: Map[String, String], cwd: String, args: Seq[String]) extends Tra
       super.startProc()
       val stdin = new BufferedWriter(new OutputStreamWriter(proc getOutputStream))
       try {
-        for (s <- input) {
+        for (s <- lines) {
           stdin.write(s)
         }
       } finally {
@@ -73,19 +68,12 @@ class Proc(env: Map[String, String], cwd: String, args: Seq[String]) extends Tra
   }
 
   /**
-   * Start process without any IO interaction.
-   */
-  def apply() = {
-    startProc
-    this
-  }
-
-  /**
    * Wait for process to finish and return its exit code.
    * If process has not been started, it will be started and then waited.
    */
   def waitFor(): Int = (proc match {
-    case null => this().proc
+    case null =>
+      startProc; proc
     case _ => proc
   }) waitFor
 
@@ -102,11 +90,8 @@ class Proc(env: Map[String, String], cwd: String, args: Seq[String]) extends Tra
    * Start the process.
    */
   protected def startProc() {
-    val environment = pb.environment()
-    env foreach { kv =>
-      environment.put(kv._1, kv._2)
-    }
-    pb.directory(new File(cwd))
+    env.applyTo(pb)
+    pwd.applyTo(pb)
     proc = pb.start()
   }
 
@@ -115,10 +100,13 @@ class Proc(env: Map[String, String], cwd: String, args: Seq[String]) extends Tra
    */
   protected def collectOutput[U](fun: String => U, reader: BufferedReader) {
     try {
-      var line = reader.readLine()
-      while (line != null) {
-        fun(line)
-        line = reader.readLine()
+      breakable {
+        while (true) {
+          val line = reader.readLine()
+          if (line == null)
+            break
+          fun(line)
+        }
       }
     } finally {
       reader close

@@ -1,13 +1,17 @@
 package at.loveoneanother.schale
 
+import java.util.HashMap
+
 /**
- * *Additional* (or override) environmental variables for running a script interpreter or a single process.
+ * Extra (or override) environment variables for running script or command.
  */
 class Env(vars: Map[String, String]) {
-  /**
-   * Run a program with command line arguments.
-   */
-  def Sh(args: String*): Proc = new Proc(vars, System getProperty "user.dir", args)
-
   override def toString() = vars toString
+
+  def Pwd(pwd: String): Pwd = new Pwd(pwd, vars)
+
+  def applyTo(pb: ProcessBuilder) {
+    val env = pb.environment()
+    vars foreach { kv => env.put(kv._1, kv._2) }
+  }
 }
