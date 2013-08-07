@@ -45,7 +45,7 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   /**
    * Start process and return all output in standard output and error.
    */
-  override def toString = String.format("%s%n", (this collect { case s: String => s }).mkString(String format "%n"))
+  override def toString = (this collect { case s: String => s }).mkString(String format "%n")
 
   /**
    * Feed data to standard input (and return new Proc object).
