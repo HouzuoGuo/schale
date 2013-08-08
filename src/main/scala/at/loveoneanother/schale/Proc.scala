@@ -4,7 +4,11 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import scala.util.control.Breaks._
+
+import scala.util.control.Breaks.break
+import scala.util.control.Breaks.breakable
+
+import akka.actor.Actor
 
 /**
  * An operating system process.
@@ -91,13 +95,18 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
     case _ => proc.destroy(); proc.waitFor()
   }
 
+  def interact(fun: Actor => Unit) {
+  }
+
   /**
    * Start the process.
    */
   protected def startProc() {
-    env.applyTo(pb)
-    pwd.applyTo(pb)
-    proc = pb.start()
+    if (proc == null) {
+      env.applyTo(pb)
+      pwd.applyTo(pb)
+      proc = pb.start()
+    }
   }
 
   /**
