@@ -3,7 +3,8 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/scalatest_2.10-1.9.1.jar"/>
-	<classpathentry kind="lib" path="lib/akka-actor_2.10-2.2.0.jar"/>
+	<classpathentry kind="lib" path="/home/howard/.ivy2/cache/com.typesafe/config/bundles/config-1.0.2.jar"/>
+	<classpathentry kind="lib" path="/home/howard/.ivy2/cache/com.typesafe.akka/akka-actor_2.10/jars/akka-actor_2.10-2.2.0.jar"/>
+	<classpathentry kind="lib" path="/home/howard/.ivy2/cache/org.scalatest/scalatest_2.10/jars/scalatest_2.10-1.9.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

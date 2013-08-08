@@ -6,7 +6,10 @@ import at.loveoneanother.schale.Env
 import at.loveoneanother.schale.Pwd
 import at.loveoneanother.schale.Shell
 import at.loveoneanother.schale.Command
-
+import at.loveoneanother.schale.ProcStdinClose
+import at.loveoneanother.schale.ProcStdoutReadLine
+import scala.concurrent.duration._
+import at.loveoneanother.schale.ProcDestroy
 class ShTest extends FunSuite {
   test("run process and use exit status") {
     expectResult(0) { Command("echo", "a").waitFor() }
@@ -115,6 +118,17 @@ class ShTest extends FunSuite {
           expectResult("/") { Command("pwd").toString }
         }
       }
+    }
+  }
+
+  test("interactive IO") {
+    Command("cat") interact { io =>
+      io ! "a"
+      io ! ProcStdinClose
+      import at.loveoneanother.schale.actorSystem
+      implicit val output = akka.actor.ActorDSL.inbox()
+      io ! ProcStdoutReadLine
+      expectResult("a") { output.receive(2 seconds) }
     }
   }
 }
