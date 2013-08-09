@@ -1,7 +1,10 @@
 package at.loveoneanother
 
-import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
+
+import akka.actor.ActorSystem
+import at.loveoneanother.schale.Env
+import at.loveoneanother.schale.Pwd
 
 package object schale {
   implicit val defaultPwd = new Pwd(System getProperty "user.dir")

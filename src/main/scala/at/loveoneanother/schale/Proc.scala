@@ -4,23 +4,23 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+
 import scala.util.control.Breaks.break
 import scala.util.control.Breaks.breakable
-import akka.actor.Actor
-import scala.concurrent.duration._
-import scala.concurrent._
-import akka.actor.Actor
-import akka.actor.ActorDSL._
-import akka.actor.ActorSystem
-import akka.pattern._
-import akka.util.Timeout
+
+import akka.actor.ActorDSL.Act
+import akka.actor.ActorDSL.actor
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 /**
  * An operating system process.
  */
 class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   private val pb = new ProcessBuilder(args: _*)
   private var proc: Process = null
+  private var inputWriter: BufferedWriter = null
+  private var outputReader: BufferedReader = null
+  private var errorReader: BufferedReader = null
 
   /**
    * Start process and traverse lines in standard output.
@@ -28,7 +28,7 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   def stdout = new Traversable[String] {
     def foreach[U](fun: String => U) {
       startProc()
-      collectOutput(fun, new BufferedReader(new InputStreamReader(proc getInputStream)))
+      collectOutput(fun, outputReader)
     }
   }
 
@@ -38,7 +38,7 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   def stderr = new Traversable[String] {
     def foreach[U](fun: String => U) {
       startProc()
-      collectOutput(fun, new BufferedReader(new InputStreamReader(proc getErrorStream)))
+      collectOutput(fun, errorReader)
     }
   }
 
@@ -48,7 +48,7 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   def foreach[U](fun: String => U) {
     pb.redirectErrorStream(true)
     startProc()
-    collectOutput(fun, new BufferedReader(new InputStreamReader(proc getInputStream)))
+    collectOutput(fun, outputReader)
   }
 
   /**
@@ -80,11 +80,17 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
    * Wait for process to finish and return its exit code.
    * If process has not been started, it will be started and then waited.
    */
-  def waitFor(): Int = (proc match {
-    case null =>
-      startProc(); proc
-    case _ => proc
-  }) waitFor
+  def waitFor(): Int = {
+    if (proc == null)
+      startProc()
+    try {
+      if (inputWriter != null)
+        inputWriter.close()
+      // there is no need to close output readers
+    } finally {
+    }
+    proc.waitFor()
+  }
 
   /**
    * Start this process in background (does not block main thread).
@@ -97,7 +103,7 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
    */
   def destroy(): Int = proc match {
     case null => throw new IllegalStateException("Process has not started")
-    case _ => proc.destroy(); proc.waitFor()
+    case _ => proc.destroy(); waitFor()
   }
 
   /**
@@ -105,46 +111,28 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
    */
   def interact(fun: ActorRef => Unit) {
     startProc()
-    var stdin = new BufferedWriter(new OutputStreamWriter(proc getOutputStream))
-    var stdout = new BufferedReader(new InputStreamReader(proc getInputStream))
-    var stderr = new BufferedReader(new InputStreamReader(proc getErrorStream))
-    val interactiveActor = actor(new Act {
+    fun(actor(new Act {
       become {
         // Output control
-        case ProcStdoutReadLine => {
-          val line = stdout.readLine()
-          println("a line has been read", line)
-          sender ! line
-        }
-        case ProcStdoutClose =>
-          if (stdout != null) { stdout.close(); stdout = null }
-        case ProcStderrReadLine => sender ! stderr.readLine()
-        case ProcStdErrClose =>
-          if (stderr != null) { stderr.close(); stderr = null }
+        case ProcStdoutReadLine =>
+          sender ! outputReader.readLine()
+        case ProcStdoutReadChar =>
+          sender ! outputReader.read()
+        case ProcStderrReadLine =>
+          sender ! errorReader.readLine()
+        case ProcStderrReadChar =>
+          sender ! errorReader.read()
         // Input control
-        case s: String => stdin.write(s)
-        case c: Char => stdin.write(c.toInt)
-        case ProcStdinFlush => stdin.flush()
+        case s: String =>
+          inputWriter.write(s)
+        case c: Char =>
+          inputWriter.write(c.toInt)
+        case ProcStdinFlush =>
+          inputWriter.flush()
         case ProcStdinClose =>
-          if (stdin != null) { stdin.close() }
-        // Process control
-        case ProcDestroy => {
-          destroy()
-          context.stop(self)
-        }
-        case ProcWaitFor => {
-          sender ! waitFor()
-          context.stop(self)
-        }
+          inputWriter.close(); inputWriter = null
       }
-    })
-    try {
-      fun(interactiveActor)
-    } finally {
-      if (stdin != null) stdin.close()
-      if (stdout != null) stdout.close()
-      if (stderr != null) stderr.close()
-    }
+    }))
   }
 
   /**
@@ -155,6 +143,9 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
       env.applyTo(pb)
       pwd.applyTo(pb)
       proc = pb.start()
+      inputWriter = new BufferedWriter(new OutputStreamWriter(proc getOutputStream))
+      outputReader = new BufferedReader(new InputStreamReader(proc getInputStream))
+      errorReader = new BufferedReader(new InputStreamReader(proc getErrorStream))
     }
   }
 

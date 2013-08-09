@@ -1,16 +1,28 @@
 package test.at.loveoneanother.schale
 
 import java.io.IOException
+
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
+import scala.util.Failure
+import scala.util.Success
+
 import org.scalatest.FunSuite
+
+import akka.actor.actorRef2Scala
+import akka.pattern.ask
+import akka.util.Timeout
+import at.loveoneanother.schale.Command
 import at.loveoneanother.schale.Env
+import at.loveoneanother.schale.ProcStderrReadChar
+import at.loveoneanother.schale.ProcStdinClose
+import at.loveoneanother.schale.ProcStdinFlush
+import at.loveoneanother.schale.ProcStdoutReadLine
 import at.loveoneanother.schale.Pwd
 import at.loveoneanother.schale.Shell
-import at.loveoneanother.schale.Command
-import at.loveoneanother.schale.ProcStdinClose
-import at.loveoneanother.schale.ProcStdoutReadLine
-import scala.concurrent.duration._
-import at.loveoneanother.schale.ProcDestroy
-class ShTest extends FunSuite {
+
+class ProcTest extends FunSuite {
   test("run process and use exit status") {
     expectResult(0) { Command("echo", "a").waitFor() }
   }
@@ -122,13 +134,48 @@ class ShTest extends FunSuite {
   }
 
   test("interactive IO") {
-    Command("cat") interact { io =>
-      io ! "a"
-      io ! ProcStdinClose
+    val proc = Command("grep", "a")
+    proc interact { io =>
+      import scala.concurrent.ExecutionContext.Implicits.global
       import at.loveoneanother.schale.actorSystem
-      implicit val output = akka.actor.ActorDSL.inbox()
-      io ! ProcStdoutReadLine
-      expectResult("a") { output.receive(2 seconds) }
+      implicit val timeout = Timeout(2 seconds)
+
+      io ! "a"
+      io ! ProcStdinFlush
+      io ! ProcStdinClose
+      val future = io ? ProcStdoutReadLine
+      future onComplete {
+        case Success(line) => {
+          expectResult("a") { line }
+          expectResult(0) { proc.waitFor() }
+        }
+        case Failure(e) =>
+          ProcTest.this.fail("cannot read proc output")
+      }
+      Await.result(future, 4 seconds)
+    }
+  }
+
+  test("interactive IO (read character from stderr)") {
+    val proc = Shell("grep a 1>&2")
+    proc interact { io =>
+      import scala.concurrent.ExecutionContext.Implicits.global
+      import at.loveoneanother.schale.actorSystem
+      implicit val timeout = Timeout(2 seconds)
+
+      io ! "a"
+      io ! ProcStdinFlush
+      io ! ProcStdinClose
+      val future = io ? ProcStderrReadChar
+      future onComplete {
+        case Success(char) => {
+          expectResult('a') { char }
+          expectResult(0) { proc.waitFor() }
+        }
+        case Failure(e) =>
+          ProcTest.this.fail("cannot read proc output")
+      }
+      Await.result(future, 4 seconds)
     }
   }
 }
