@@ -1,20 +1,27 @@
-schale
-======
+# schale
 
-A subprocess interface for Scala. The project was inspired by a popular Python module called "sh".
+schale is a subprocess interface for Scala that allows you to call any other programs and interact with their input/output. A quick example (system log monitor):
 
-Status
-======
-
-Schale is still at very early stage of development, but these examples (taken from test cases) may give you an idea of how it works:
-
-    // Print command output
-    println(Sh("echo", "a"))
-
-    // Run a script and get its output
-    println(Interpret("echo a"))
-
-    // Run a command, feed to its standard input, and consume its standard output/error
-    for (output <- Sh("cat")("input line 1", "input line 2")) {
-      println(output)
+    for (line <- Command("tail", "-f", "/var/log/messages")) {
+        println(line)
     }
+
+## Features and examples
+
+Remember to `import at.loveoneanother.schale._`
+
+### Simple 
+
+    println(Command("ls", "/").toString) // command with arguments
+    println(Shell("ls -l /").toString)   // use shell to interpret
+
+### Background command
+
+    val job = Shell("sleep 100") // `Command` and `Shell` both will work
+    job.bg()                     // start in backgorund
+    // do something else ...
+    val exitStatus = job.waitFor() // wait for completion
+
+Call `job.destroy()` if you wish to terminite it before its completion.
+
+### Stdin, stdout and stderr
