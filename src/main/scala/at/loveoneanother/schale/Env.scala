@@ -1,27 +1,44 @@
 package at.loveoneanother.schale
 
-import java.util.HashMap
+import java.io.File
 
 /**
  * Extra (or override) environment variables for running script or command.
  */
-class Env(vars: Map[String, String]) {
-  implicit val self = this
+class Env(var vars: Map[String, String] = Map(), var pwd: String = System getProperty "user.dir") {
+  implicit var self = this
 
-  override def toString() = vars toString
+  override def toString() = pwd + (vars toString)
 
   /**
    * Change current working directory in this environment.
    */
-  def pwd(pwd: String)(fun: => Unit): Pwd = new Pwd(pwd, vars)
+  def cd(newPwd: String)(fun: => Unit) {
+    val oldPwd = pwd
+    pwd = newPwd
+    try {
+      fun
+    } finally {
+      pwd = oldPwd
+    }
+  }
 
   /**
    * Give more environment variables to this environment.
    */
-  def moreEnv(moreVars: Map[String, String])(fun: => Unit): Env = new Env(moreVars ++ vars)
+  def env(extra: Map[String, String])(fun: => Unit) {
+    val oldVars = vars
+    vars ++= extra
+    try {
+      fun
+    } finally {
+      vars = oldVars
+    }
+  }
 
   def applyTo(pb: ProcessBuilder) {
     val env = pb.environment()
     vars foreach { kv => env.put(kv._1, kv._2) }
+    pb.directory(new File(pwd))
   }
 }

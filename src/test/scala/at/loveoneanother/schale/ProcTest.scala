@@ -19,7 +19,6 @@ import at.loveoneanother.schale.ProcStderrReadChar
 import at.loveoneanother.schale.ProcStdinClose
 import at.loveoneanother.schale.ProcStdinFlush
 import at.loveoneanother.schale.ProcStdoutReadLine
-import at.loveoneanother.schale.Pwd
 import at.loveoneanother.schale.Shell
 
 class ProcTest extends FunSuite {
@@ -100,7 +99,7 @@ class ProcTest extends FunSuite {
   }
 
   test("run in specified cwd") {
-    new Pwd("/") {
+    new Env(pwd = "/") {
       expectResult("/") { Command("pwd").toString }
       expectResult("/") { Shell("pwd").toString }
     }
@@ -115,19 +114,20 @@ class ProcTest extends FunSuite {
   test("combine both env and pwd") {
     new Env(Map("newvar" -> "a")) {
       expectResult("a") { Shell("echo $newvar").toString }
-      pwd("/") {
+      cd("/") {
         expectResult("a") { Shell("echo $newvar").toString }
         expectResult("/") { Command("pwd").toString }
       }
-      pwd("/tmp") {
+      cd("/tmp") {
         expectResult("a") { Shell("echo $newvar").toString }
         expectResult("/tmp") { Command("pwd").toString }
-      }
-      moreEnv(Map("newvar2" -> "b")) {
-        pwd("/") {
-          expectResult("a") { Shell("echo $newvar").toString }
-          expectResult("b") { Shell("echo $newvar2").toString }
-          expectResult("/") { Command("pwd").toString }
+        env(Map("newvar2" -> "b")) {
+          expectResult("/tmp") { Command("pwd").toString }
+          cd("/") {
+            expectResult("a") { Shell("echo $newvar").toString }
+            expectResult("b") { Shell("echo $newvar2").toString }
+            expectResult("/") { Command("pwd").toString }
+          }
         }
       }
     }

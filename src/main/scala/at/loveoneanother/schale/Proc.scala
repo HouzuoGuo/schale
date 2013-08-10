@@ -15,12 +15,12 @@ import akka.actor.actorRef2Scala
 /**
  * An operating system process.
  */
-class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
-  private val pb = new ProcessBuilder(args: _*)
-  private var proc: Process = null
-  private var inputWriter: BufferedWriter = null
-  private var outputReader: BufferedReader = null
-  private var errorReader: BufferedReader = null
+class Proc(args: String*)(env: Env) extends Traversable[String] {
+  protected val pb = new ProcessBuilder(args: _*)
+  protected var proc: Process = null
+  protected var inputWriter: BufferedWriter = null
+  protected var outputReader: BufferedReader = null
+  protected var errorReader: BufferedReader = null
 
   /**
    * Start process and traverse lines in standard output.
@@ -54,26 +54,25 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   /**
    * Start process and return all output in standard output and error.
    */
-  override def toString = (this collect { case s: String => s }).mkString(String format "%n")
+  override def toString = {
+    val output = (collect { case s: String => s }).mkString(String format "%n")
+    waitFor()
+    output
+  }
 
   /**
-   * Feed data to standard input (and return new Proc object).
+   * Feed data to standard input.
    */
-  def input(lines: String*) = new Proc(args: _*)(env, pwd) {
-    /**
-     * Start process and feed input into its stdin.
-     */
-    override protected def startProc() {
-      super.startProc()
-      val stdin = new BufferedWriter(new OutputStreamWriter(proc getOutputStream))
-      try {
-        for (s <- lines) {
-          stdin.write(s)
-        }
-      } finally {
-        stdin close
+  def input(lines: String*) = {
+    startProc()
+    try {
+      for (s <- lines) {
+        inputWriter.write(s)
       }
+    } finally {
+      inputWriter.close()
     }
+    this
   }
 
   /**
@@ -109,7 +108,7 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   /**
    * Start this process in background and commence interactive IO with it.
    */
-  def interact(fun: ActorRef => Unit) {
+  def interact(fun: ActorRef => Unit) = {
     startProc()
     fun(actor(new Act {
       become {
@@ -133,6 +132,7 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
           inputWriter.close(); inputWriter = null
       }
     }))
+    this
   }
 
   /**
@@ -141,7 +141,6 @@ class Proc(args: String*)(env: Env, pwd: Pwd) extends Traversable[String] {
   protected def startProc() {
     if (proc == null) {
       env.applyTo(pb)
-      pwd.applyTo(pb)
       proc = pb.start()
       inputWriter = new BufferedWriter(new OutputStreamWriter(proc getOutputStream))
       outputReader = new BufferedReader(new InputStreamReader(proc getInputStream))
