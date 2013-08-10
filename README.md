@@ -120,7 +120,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ## Project Background
 
-Inspired by Python third-party package "sh", I realized that subprocess management is difficult on JVM and no one has come up with an easy to use subprocess interface, thus this project was born.
+Subprocess management was traditionally carried out by using `Runtime.getRuntime().exec` series of calls. Although JDK introduced `ProcessBuilder` later on, but process building and IO interactivity could still be cumbersome.
+
+Schale takes advantage of advanced features and syntactic sugar offered by Scala, and brings to you:
+
+- Easy process creation
+- Background process management
+- Simplified process input/output interface
+- Advanced, interactive, non-blocking process IO
+- Hierarchical process environment (variables, working directory) management
+
+Schale was inspired by Python third-party package "sh".
 
 And shoutout to NumberFour AG!
 
