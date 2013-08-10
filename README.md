@@ -3,6 +3,18 @@ Schale
 
 Schale is a subprocess interface for Scala. Make all your system programs easily available to Scala, call those programs and interact with their input and output!
 
+## Why use Schale?
+
+Although Scala standard library `scala.sys.process` helps external process execution, however it does not:
+
+- Manage interactive input/output
+- Manage process environment (variables and working directory)
+
+Schale addresses both of the downsides:
+
+- It supports both asynchronous and synchronous interactive IO by exposing an Akka actor, eliminating the necessity of manual stream management.
+- Process environment can be very easily managed and prepared in a hierarchical fashion, reduce code redundancy and improve readability.
+
 ## Usage
 
 ### A gentle start
