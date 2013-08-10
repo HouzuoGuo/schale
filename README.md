@@ -1,6 +1,7 @@
-# Schale - a subprocess interface for Scala
+Schale
+------
 
-Make all your system programs easily available to Scala, call those programs and interact with their input and output!
+Schale is a subprocess interface for Scala. Make all your system programs easily available to Scala, call those programs and interact with their input and output!
 
 ## Usage
 
