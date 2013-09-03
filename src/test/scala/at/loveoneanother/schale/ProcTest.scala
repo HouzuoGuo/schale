@@ -178,4 +178,10 @@ class ProcTest extends FunSuite {
       Await.result(future, 4 seconds)
     }
   }
+
+  test("IO redirect to file using shell") {
+    new java.io.File("/tmp/schale_test").delete()
+    Shell("echo a | grep a > /tmp/schale_test").waitFor()
+    expectResult(true) { new java.io.File("/tmp/schale_test").exists() }
+  }
 }
