@@ -1,3 +1,7 @@
+import AssemblyKeys._
+
+assemblySettings
+
 name := "schale"
 
 version := "1.0"
@@ -9,3 +13,7 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.2.0"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
+
+jarName in assembly := "schale.jar"
+
+test in assembly := {}
