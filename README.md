@@ -151,8 +151,6 @@ Schale takes advantage of advanced features and syntactic sugar offered by Scala
 
 Schale was inspired by Python third-party package "sh".
 
-And shoutout to NumberFour AG!
-
 [Howard]: mailto:guohouzuo@gmail.com
 [Twitter]: https://twitter.com/hzguo
 [blog]: http://allstarnix.blogspot.com.au
