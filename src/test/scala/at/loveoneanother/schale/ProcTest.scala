@@ -118,11 +118,15 @@ class ProcTest extends FunSuite {
         expectResult("a") { Shell("echo $newvar").toString }
         expectResult("/") { Command("pwd").toString }
       }
-      cd("/tmp") {
+
+      // MacOS redirects /tmp to /private/tmp as canonical path
+      val tmpPath = new java.io.File(System.getProperty("java.io.tmpdir")).getCanonicalPath
+      val tmpdir = tmpPath.toString
+      cd(tmpdir) {
         expectResult("a") { Shell("echo $newvar").toString }
-        expectResult("/tmp") { Command("pwd").toString }
+        expectResult(tmpdir) { Command("pwd").toString }
         env(Map("newvar2" -> "b")) {
-          expectResult("/tmp") { Command("pwd").toString }
+          expectResult(tmpdir) { Command("pwd").toString }
           cd("/") {
             expectResult("a") { Shell("echo $newvar").toString }
             expectResult("b") { Shell("echo $newvar2").toString }
